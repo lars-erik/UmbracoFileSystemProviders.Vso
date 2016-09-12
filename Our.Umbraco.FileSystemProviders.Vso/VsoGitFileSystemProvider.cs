@@ -2,15 +2,20 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Web.Hosting;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
+using Umbraco.Core;
 using Umbraco.Core.IO;
+using Umbraco.Forms.Data.Storage;
 
-namespace Umbraco.Forms.Git
+namespace Our.Umbraco.FileSystemProviders.Vso
 {
     public class VsoGitFileSystemProvider : IFileSystem
     {
+        public static Func<string> ApplicationPath = () => HostingEnvironment.ApplicationPhysicalPath;
+
         readonly IFileSystem innerFileSystem;
         private readonly GitHttpClientBase gitClient;
         private readonly string repositoryId;
@@ -18,8 +23,11 @@ namespace Umbraco.Forms.Git
 
         public VsoGitFileSystemProvider(string virtualRoot, string gitUrl, string username, string password, string repositoryId, string repoRoot)
             : this(
-                  new PhysicalFileSystem(virtualRoot), 
-                  new GitHttpClient(new Uri(gitUrl), new VssCredentials(new VssBasicCredential(username, password))), repositoryId, repoRoot)
+                  new FormsFileSystem(new PhysicalFileSystem(virtualRoot)), 
+                  new GitHttpClient(new Uri(gitUrl), new VssCredentials(new VssBasicCredential(username, password))),
+                  repositoryId,
+                  repoRoot
+            )
         {
         }
 
@@ -60,13 +68,16 @@ namespace Umbraco.Forms.Git
         {
             innerFileSystem.AddFile(path, stream, overrideIfExists);
 
+            path = innerFileSystem.GetFullPath(path);
+            path = path.Replace(ApplicationPath(), "").Replace(@"\", "/").EnsureStartsWith("/");
+
             if (stream.CanSeek)
             {
                 stream.Seek(0, SeekOrigin.Begin);
                 path = path.TrimStart('~');
 
-                var lastCommitId = ExecuteSync(GetLastCommitId);
-                var fileExists = ExecuteSync(() => GitFileExists(path));
+                var lastCommitId = GetLastCommitId();
+                var fileExists = GitFileExists(path);
 
                 VersionControlChangeType changeType;
                 string message;
@@ -82,7 +93,7 @@ namespace Umbraco.Forms.Git
                     message = "Added from backoffice";
                 }
 
-                ExecuteSync(() => PushChange(path, stream, lastCommitId, message, changeType));
+                PushChange(path, stream, lastCommitId, message, changeType);
             }
             else
             {
@@ -90,11 +101,11 @@ namespace Umbraco.Forms.Git
             }
         }
 
-        private async Task<bool> GitFileExists(string path)
+        private bool GitFileExists(string path)
         {
             try
             {
-                await gitClient.GetItemAsync(repositoryId, repoRoot + path);
+                gitClient.GetItemAsync(repositoryId, repoRoot + path).SyncResult();
             }
             catch (VssServiceException)
             {
@@ -103,20 +114,10 @@ namespace Umbraco.Forms.Git
             return true;
         }
 
-        private void ExecuteSync(Func<Task> asyncCall)
-        {
-            asyncCall().SyncResult();
-        }
-
-        private TResult ExecuteSync<TResult>(Func<Task<TResult>> asyncCall)
-        {
-            return asyncCall().SyncResult();
-        }
-
-        private async Task PushChange(string path, Stream stream, string lastCommitId, string message, VersionControlChangeType changeType)
+        private void PushChange(string path, Stream stream, string lastCommitId, string message, VersionControlChangeType changeType)
         {
             var fileContents = new StreamReader(stream).ReadToEnd();
-            var result = await gitClient.CreatePushAsync(new GitPush
+            var result = gitClient.CreatePushAsync(new GitPush
             {
                 RefUpdates = new[]
                 {
@@ -149,19 +150,19 @@ namespace Umbraco.Forms.Git
                         }
                     }
                 }
-            }, repositoryId);
+            }, repositoryId).SyncResult();
         }
 
-        private async Task<string> GetLastCommitId()
+        private string GetLastCommitId()
         {
-            var result = await gitClient.GetCommitsAsync(repositoryId, new GitQueryCommitsCriteria
+            var result = gitClient.GetCommitsAsync(repositoryId, new GitQueryCommitsCriteria
             {
                 ItemVersion = new GitVersionDescriptor
                 {
                     Version = "master",
                     VersionType = GitVersionType.Branch
                 }
-            }, 0, 1);
+            }, 0, 1).SyncResult();
             return result[0].CommitId;
         }
 

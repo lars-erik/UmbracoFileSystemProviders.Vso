@@ -7,6 +7,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Our.Umbraco.FileSystemProvi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Our.Umbraco.FileSystemProviders.Vso.Tests", "Our.Umbraco.FileSystemProviders.Vso.Tests\Our.Umbraco.FileSystemProviders.Vso.Tests.csproj", "{EF250B63-6533-4493-96BF-589CCF45B96B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C4FA3AA4-94AE-4CFE-BF27-38983DBD5A0D}"
+	ProjectSection(SolutionItems) = preProject
+		readme.md = readme.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

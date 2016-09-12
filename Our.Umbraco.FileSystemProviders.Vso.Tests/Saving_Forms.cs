@@ -2,16 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Web.Hosting;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Moq;
 using NUnit.Framework;
 using Umbraco.Core.IO;
 
-namespace Umbraco.Forms.Git.Tests
+namespace Our.Umbraco.FileSystemProviders.Vso.Tests
 {
     [TestFixture]
     public class Saving_Files
@@ -25,10 +24,13 @@ namespace Umbraco.Forms.Git.Tests
         const string repoRoot = "/My.WebSite";
         private const string expectedContents = "{\"id\":\"7b9487c3-7a66-4187-a049-e0213389e0a3\"}";
         private const string expectedPath = "/App_Plugins/UmbracoForms/Data/Forms/b79a3cc8-533c-41a9-bcd2-2e9210c7c010.json";
+        private const string localPath = @"C:\Fancy\Root\Some.Web\App_Plugins\UmbracoForms\Data\Forms\b79a3cc8-533c-41a9-bcd2-2e9210c7c010.json";
 
         [SetUp]
         public void Setup()
         {
+            VsoGitFileSystemProvider.ApplicationPath = () => @"C:\Fancy\Root\Some.Web";
+            
             var wrapped = Mock.Of<IFileSystem>();
             gitClientMock = new Mock<GitHttpClientBase>(new Uri("http://localhost"), new VssCredentials());
             var gitClient = gitClientMock.Object;
@@ -54,7 +56,7 @@ namespace Umbraco.Forms.Git.Tests
         [Test]
         public void Commits_Changed_File_To_Git()
         {
-            provider.AddFile(path, memoryStream);
+            provider.AddFile(localPath, memoryStream);
 
             VerifyCommit(VersionControlChangeType.Edit, "Changed from backoffice");
         }
@@ -66,7 +68,7 @@ namespace Umbraco.Forms.Git.Tests
                 .Setup(c => c.GetItemAsync(repositoryId, repoRoot + expectedPath, It.IsAny<string>(), It.IsAny<VersionControlRecursionType?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<GitVersionDescriptor>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new VssServiceException());
 
-            provider.AddFile(path, memoryStream);
+            provider.AddFile(localPath, memoryStream);
 
             gitClientMock
                 .Verify(c => c.GetItemAsync(repositoryId, repoRoot + expectedPath, It.IsAny<string>(), It.IsAny<VersionControlRecursionType?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<GitVersionDescriptor>(), It.IsAny<object>(), It.IsAny<CancellationToken>()));

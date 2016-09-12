@@ -7,8 +7,8 @@
     <ProjectGuid>{EF250B63-6533-4493-96BF-589CCF45B96B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Umbraco.Forms.Git.Tests</RootNamespace>
-    <AssemblyName>Umbraco.Forms.Git.Tests</AssemblyName>
+    <RootNamespace>Our.Umbraco.FileSystemProviders.Vso.Tests</RootNamespace>
+    <AssemblyName>Our.Umbraco.FileSystemProviders.Vso.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -232,6 +232,7 @@
       <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
       <Private>True</Private>
