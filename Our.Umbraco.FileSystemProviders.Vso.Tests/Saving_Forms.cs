@@ -25,6 +25,7 @@ namespace Our.Umbraco.FileSystemProviders.Vso.Tests
         private const string expectedContents = "{\"id\":\"7b9487c3-7a66-4187-a049-e0213389e0a3\"}";
         private const string expectedPath = "/App_Plugins/UmbracoForms/Data/Forms/b79a3cc8-533c-41a9-bcd2-2e9210c7c010.json";
         private const string localPath = @"C:\Fancy\Root\Some.Web\App_Plugins\UmbracoForms\Data\Forms\b79a3cc8-533c-41a9-bcd2-2e9210c7c010.json";
+        private const string physicalRoot = @"C:\Fancy\Root\Some.Web\App_Plugins\UmbracoForms\Data";
 
         [SetUp]
         public void Setup()
@@ -42,6 +43,9 @@ namespace Our.Umbraco.FileSystemProviders.Vso.Tests
             writer.Write(expectedContents);
             writer.Flush();
             memoryStream.Seek(0, SeekOrigin.Begin);
+
+            Mock.Get(wrapped).Setup(w => w.GetFullPath(It.IsAny<string>()))
+                .Returns(new Func<string, string>(s => Path.Combine(physicalRoot, s.Replace("/", @"\"))));
 
             gitClientMock.Setup(c => c.GetCommitsAsync(repositoryId, It.IsAny<GitQueryCommitsCriteria>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new List<GitCommitRef>
