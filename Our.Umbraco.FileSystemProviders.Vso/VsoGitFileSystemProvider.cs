@@ -24,23 +24,31 @@ namespace Our.Umbraco.FileSystemProviders.Vso
         private readonly GitHttpClientBase gitClient;
         private readonly string repositoryId;
         private readonly string repoRoot;
+        protected internal string environment;
+        protected internal string branchName;
+        protected internal string branchReference;
 
-        public VsoGitFileSystemProvider(string virtualRoot, string gitUrl, string username, string password, string repositoryId, string repoRoot)
+        public VsoGitFileSystemProvider(string virtualRoot, string gitUrl, string username, string password, string repositoryId, string repoRoot, string environment)
             : this(
                   new FormsFileSystem(new PhysicalFileSystem(virtualRoot)), 
                   new GitHttpClient(new Uri(gitUrl), new VssCredentials(new VssBasicCredential(username, password))),
                   repositoryId,
-                  repoRoot
+                  repoRoot,
+                  environment
             )
         {
         }
 
-        public VsoGitFileSystemProvider(IFileSystem innerFileSystem, GitHttpClientBase gitClient, string repositoryId, string repoRoot)
+        public VsoGitFileSystemProvider(IFileSystem innerFileSystem, GitHttpClientBase gitClient, string repositoryId, string repoRoot, string environment)
         {
             this.innerFileSystem = innerFileSystem;
             this.gitClient = gitClient;
             this.repositoryId = repositoryId;
             this.repoRoot = repoRoot;
+
+            this.environment = environment;
+            branchName = "forms/" + environment;
+            branchReference = "refs/heads/" + branchName;
         }
 
         public IEnumerable<string> GetDirectories(string path)
@@ -83,7 +91,7 @@ namespace Our.Umbraco.FileSystemProviders.Vso
                 
                 path = path.TrimStart('~');
 
-                var lastCommitId = GetLastCommitId();
+                var lastCommitId = GetLastCommitId(branchName, "master");
                 var fileExists = GitFileExists(path);
                 var jObj = JsonConvert.DeserializeObject<JObject>(contents);
                 var entityName = jObj["name"] ?? jObj["id"];
@@ -127,13 +135,23 @@ namespace Our.Umbraco.FileSystemProviders.Vso
         private void PushChange(string path, Stream stream, string lastCommitId, string message, VersionControlChangeType changeType)
         {
             var fileContents = new StreamReader(stream).ReadToEnd();
+
+            //var existingRefs = gitClient.GetRefsAsync(repositoryId).SyncResult();
+            //if (existingRefs.All(x => x.Name != branchReference))
+            //{
+            //    gitClient.UpdateRefAsync(new GitRefUpdate
+            //    {
+            //        Name = branchName
+            //    }, repositoryId, null).SyncResult();
+            //}
+
             var result = gitClient.CreatePushAsync(new GitPush
             {
                 RefUpdates = new[]
                 {
                     new GitRefUpdate
                     {
-                        Name = "refs/heads/master",
+                        Name = branchReference,
                         OldObjectId = lastCommitId
                     }
                 },
@@ -163,17 +181,29 @@ namespace Our.Umbraco.FileSystemProviders.Vso
             }, repositoryId).SyncResult();
         }
 
-        private string GetLastCommitId()
+        private string GetLastCommitId(string branch, string fallBackBranch = null)
         {
-            var result = gitClient.GetCommitsAsync(repositoryId, new GitQueryCommitsCriteria
+            try
             {
-                ItemVersion = new GitVersionDescriptor
+                var result = gitClient.GetCommitsAsync(repositoryId, new GitQueryCommitsCriteria
                 {
-                    Version = "master",
-                    VersionType = GitVersionType.Branch
+                    ItemVersion = new GitVersionDescriptor
+                    {
+                        Version = branch,
+                        VersionType = GitVersionType.Branch
+                    }
+                }, 0, 1).SyncResult();
+                return result[0].CommitId;
+            }
+            catch (VssServiceException)
+            {
+                if (fallBackBranch != null)
+                {
+                    return GetLastCommitId(fallBackBranch);
                 }
-            }, 0, 1).SyncResult();
-            return result[0].CommitId;
+
+                return null;
+            }
         }
 
         public IEnumerable<string> GetFiles(string path)

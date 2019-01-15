@@ -52,7 +52,7 @@ namespace Our.Umbraco.FileSystemProviders.Vso.Tests
                     }
                 }
             );
-            provider = new VsoGitFileSystemProvider(wrapped, gitClient, repositoryId, repoRoot);
+            provider = new VsoGitFileSystemProvider(wrapped, gitClient, repositoryId, repoRoot, "production");
             path = "~" + expectedPath;
 
             ResetStream();
@@ -107,6 +107,7 @@ namespace Our.Umbraco.FileSystemProviders.Vso.Tests
             var commit = push.Commits.Single();
             var change = commit.Changes.Single();
             var refUpdate = push.RefUpdates.Single();
+            Assert.That(refUpdate.Name, Is.EqualTo("refs/heads/forms/production"));
             Assert.That(refUpdate.OldObjectId, Is.EqualTo(expectedOldObjectId));
             Assert.That(commit.Comment, Is.EqualTo(message));
             Assert.That(change.ChangeType, Is.EqualTo(changeType));
