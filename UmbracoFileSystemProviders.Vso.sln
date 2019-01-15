@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Our.Umbraco.FileSystemProviders.Vso", "Our.Umbraco.FileSystemProviders.Vso\Our.Umbraco.FileSystemProviders.Vso.csproj", "{D2A07749-F95F-4534-90DB-54C10BB1DE0A}"
 EndProject
@@ -9,6 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Our.Umbraco.FileSystemProvi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C4FA3AA4-94AE-4CFE-BF27-38983DBD5A0D}"
 	ProjectSection(SolutionItems) = preProject
+		license.txt = license.txt
 		readme.md = readme.md
 	EndProjectSection
 EndProject
@@ -29,5 +30,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {77ECD225-902A-49A0-8C4B-E66E7B51ACD8}
 	EndGlobalSection
 EndGlobal

@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Umbraco.Forms.Git")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("Our.Umbraco.FileSystemProviders.Vso")]
+[assembly: AssemblyDescription("Wrapper for Umbraco's PhysicalFileSystem that commits files to a git repo on save as well.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Umbraco.Forms.Git")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCompany("Lars-Erik Aabech & contributors")]
+[assembly: AssemblyProduct("Our.Umbraco.FileSystemProviders.Vso")]
+[assembly: AssemblyCopyright("Copyright ©  2016-2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.1.*")]
-[assembly: AssemblyInformationalVersion("1.1.0")]
+[assembly: AssemblyInformationalVersion("1.1.0-beta")]
