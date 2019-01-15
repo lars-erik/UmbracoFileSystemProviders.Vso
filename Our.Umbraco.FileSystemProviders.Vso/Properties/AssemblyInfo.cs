@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Lars-Erik Aabech & contributors")]
 [assembly: AssemblyProduct("Our.Umbraco.FileSystemProviders.Vso")]
-[assembly: AssemblyCopyright("Copyright ©  2016-2018")]
+[assembly: AssemblyCopyright("Copyright © Lars-Erik Aabech & contributors 2016-2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

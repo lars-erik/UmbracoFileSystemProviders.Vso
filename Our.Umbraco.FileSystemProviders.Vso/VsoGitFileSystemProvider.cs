@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Hosting;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Umbraco.Core;
 using Umbraco.Core.IO;
 using Umbraco.Forms.Data.Storage;
@@ -74,10 +78,16 @@ namespace Our.Umbraco.FileSystemProviders.Vso
             if (stream.CanSeek)
             {
                 stream.Seek(0, SeekOrigin.Begin);
+                var contents = new StreamReader(stream).ReadToEnd();
+                stream.Seek(0, SeekOrigin.Begin);
+                
                 path = path.TrimStart('~');
 
                 var lastCommitId = GetLastCommitId();
                 var fileExists = GitFileExists(path);
+                var jObj = JsonConvert.DeserializeObject<JObject>(contents);
+                var entityName = jObj["name"] ?? jObj["id"];
+                var entityType = Path.GetDirectoryName(path)?.Split('\\').Last().ToLower().TrimEnd("s");
 
                 VersionControlChangeType changeType;
                 string message;
@@ -85,12 +95,12 @@ namespace Our.Umbraco.FileSystemProviders.Vso
                 if (fileExists)
                 {
                     changeType = VersionControlChangeType.Edit;
-                    message = "Changed from backoffice";
+                    message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" modified {entityType} \"{entityName}\"";
                 }
                 else
                 {
                     changeType = VersionControlChangeType.Add;
-                    message = "Added from backoffice";
+                    message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" added {entityType} \"{entityName}\"";
                 }
 
                 PushChange(path, stream, lastCommitId, message, changeType);
