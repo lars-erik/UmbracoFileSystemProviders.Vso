@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Umbraco.Core;
 using Umbraco.Core.IO;
+using Umbraco.Core.Logging;
 using Umbraco.Forms.Data.Storage;
 
 namespace Our.Umbraco.FileSystemProviders.Vso
@@ -19,6 +20,7 @@ namespace Our.Umbraco.FileSystemProviders.Vso
     public class VsoGitFileSystemProvider : IFileSystem
     {
         public static Func<string> ApplicationPath = () => HostingEnvironment.ApplicationPhysicalPath;
+        public static Action<Exception> LogException = (ex) => LogHelper.Error<VsoGitFileSystemProvider>("Failed to push to Azure Devops", ex);
 
         readonly IFileSystem innerFileSystem;
         private readonly GitHttpClientBase gitClient;
@@ -80,42 +82,51 @@ namespace Our.Umbraco.FileSystemProviders.Vso
         {
             innerFileSystem.AddFile(path, stream, overrideIfExists);
 
-            path = innerFileSystem.GetFullPath(path);
-            path = path.Replace(ApplicationPath(), "").Replace(@"\", "/").EnsureStartsWith("/");
-
-            if (stream.CanSeek)
+            try
             {
-                stream.Seek(0, SeekOrigin.Begin);
-                var contents = new StreamReader(stream).ReadToEnd();
-                stream.Seek(0, SeekOrigin.Begin);
-                
-                path = path.TrimStart('~');
 
-                var lastCommitId = GetLastCommitId(branchName, "master");
-                var fileExists = GitFileExists(path);
-                var jObj = JsonConvert.DeserializeObject<JObject>(contents);
-                var entityName = jObj["name"] ?? jObj["id"];
-                var entityType = Path.GetDirectoryName(path)?.Split('\\').Last().ToLower().TrimEnd("s");
+                path = innerFileSystem.GetFullPath(path);
+                path = path.Replace(ApplicationPath(), "").Replace(@"\", "/").EnsureStartsWith("/");
 
-                VersionControlChangeType changeType;
-                string message;
-
-                if (fileExists)
+                if (stream.CanSeek)
                 {
-                    changeType = VersionControlChangeType.Edit;
-                    message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" modified {entityType} \"{entityName}\"";
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var contents = new StreamReader(stream).ReadToEnd();
+                    stream.Seek(0, SeekOrigin.Begin);
+                    
+                    path = path.TrimStart('~');
+
+                    var lastCommitId = GetLastCommitId(branchName, "master");
+                    var fileExists = GitFileExists(path);
+                    var jObj = JsonConvert.DeserializeObject<JObject>(contents);
+                    var entityName = jObj["name"] ?? jObj["id"];
+                    var entityType = Path.GetDirectoryName(path)?.Split('\\').Last().ToLower().TrimEnd("s");
+
+                    VersionControlChangeType changeType;
+                    string message;
+
+                    if (fileExists)
+                    {
+                        changeType = VersionControlChangeType.Edit;
+                        message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" modified {entityType} \"{entityName}\"";
+                    }
+                    else
+                    {
+                        changeType = VersionControlChangeType.Add;
+                        message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" added {entityType} \"{entityName}\"";
+                    }
+
+                    PushChange(path, stream, lastCommitId, message, changeType);
                 }
                 else
                 {
-                    changeType = VersionControlChangeType.Add;
-                    message = (Thread.CurrentPrincipal?.Identity?.Name ?? "Unknown user") + $" added {entityType} \"{entityName}\"";
+                    // TODO: Log can't seek?
                 }
 
-                PushChange(path, stream, lastCommitId, message, changeType);
             }
-            else
+            catch (Exception e)
             {
-                // TODO: Log can't seek?
+                LogException(e);
             }
         }
 
@@ -123,7 +134,11 @@ namespace Our.Umbraco.FileSystemProviders.Vso
         {
             try
             {
-                gitClient.GetItemAsync(repositoryId, repoRoot + path).SyncResult();
+                gitClient.GetItemAsync(repositoryId, repoRoot + path, versionDescriptor: new GitVersionDescriptor
+                {
+                    Version = branchName,
+                    VersionType = GitVersionType.Branch
+                }).SyncResult();
             }
             catch (VssServiceException)
             {
